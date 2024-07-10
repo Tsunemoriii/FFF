@@ -152,7 +152,7 @@ async def forward_old_msg(c: bot, m: Message):
                 msg = await ub.get_messages(from_chat_id, i)
                 if msg.empty:
                     empty += 1
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(8)
                     continue
                 
                 elif msg.media:
@@ -162,7 +162,7 @@ async def forward_old_msg(c: bot, m: Message):
                     else:
                         new_cap = None 
                     await ub.copy_message(to_chat_id, from_chat_id, msg.id, new_cap, pm)
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(8)
                     success += 1
                     continue
                 
@@ -171,17 +171,17 @@ async def forward_old_msg(c: bot, m: Message):
                     new_cap = await replaceshits(text)
                     await ub.send_message(to_chat_id, new_cap, disable_web_page_preview=True)
                     success += 1
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(8)
                     continue
                     
                 else:
                     failed += 1
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(8)
                     continue
             except Exception as e:
                 print(e)
                 failed += 1
-                await asyncio.sleep(2)
+                await asyncio.sleep(8)
                 continue
         
         await to_edit.delete()
