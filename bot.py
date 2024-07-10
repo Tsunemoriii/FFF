@@ -55,7 +55,7 @@ async def bot_owner_filt(_, __, m: Message):
 
 
 async def replaceshits(tex):
-    for i in findall(r"(@[A-Za-z0-9_]*[A-Za-z]+[A-Za-z0-9_]*( |$|\b))", tex):
+    """for i in findall(r"(@[A-Za-z0-9_]*[A-Za-z]+[A-Za-z0-9_]*( |$|\b))", tex):
         tex = tex.replace(i[0], "")
     for i in findall(
             r"((http(s)?://)?(t|telegram)\.(me|dog)/[A-Za-z0-9_]+( |$|\b))",
@@ -66,7 +66,7 @@ async def replaceshits(tex):
     if words:
         word_list = words.split()
         for x in word_list:
-            tex = tex.replace(x, "")
+            tex = tex.replace(x, "")"""
     return tex
 
 
@@ -128,51 +128,66 @@ async def forward_old_msg(c: bot, m: Message):
     except:
         await m.reply_text("Channel id should be integer") 
         return
-    
-    links = splited[-1].strip().split("-")
-    if len(links) !=2:
-        await m.reply_text("Give me only two links")
-        return
-    msg_ids = [links[0].strip().split("/")[-1], links[1].strip().split("/")[-1]]
-    from_msg = int(min(msg_ids))
-    to_msg = int(max(msg_ids))
-    from_chat = links[0].strip().split("/")[-2]
-    from_chat = await ub.resolve_peer(int(from_chat))
-    from_chat_id = from_chat.channel_id
+    try:
+        links = splited[-1].strip().split("-")
+        if len(links) !=2:
+            await m.reply_text("Give me only two links")
+            return
+        msg_ids = [links[0].strip().split("/")[-1], links[1].strip().split("/")[-1]]
+        from_msg = int(min(msg_ids))
+        to_msg = int(max(msg_ids))
+        from_chat = links[0].strip().split("/")
+        if from_chat[-3] == "c":
+            from_chat_id = int("-100"+from_chat[-2])
+        else:
+            from_chat_id = from_chat[-2]
 
-    to_edit = await m.reply_text(f"Frowarding {to_msg - from_msg} from chat id `{from_chat_id}` to `{to_chat_id}`")
-    success = 0
-    failed = 0
-    empty = 0
-
-    for i in range(from_msg, to_msg+1):
-        try:
-            msg = await ub.get_messages(from_chat_id, i)
-            if msg.empty:
-                empty += 1
-                continue
-            
-            elif msg.text:
-                text = msg.text.html
-                new_cap = await replaceshits(text)
-                await ub.send_message(to_chat_id, new_cap, disable_web_page_preview=True)
-                success += 1
-
-            elif msg.caption:
-                text = m.caption.html
-                new_cap = await replaceshits(text)
-                await ub.copy_message(to_chat_id, from_chat_id, msg.id, new_cap, pm)
-                success += 1
-
-            else:
+        to_edit = await m.reply_text(f"Frowarding {to_msg - from_msg} from chat id `{from_chat_id}` to `{to_chat_id}`")
+        success = 0
+        failed = 0
+        empty = 0
+        for i in range(from_msg, to_msg+1):
+            print(i)
+            try:
+                msg = await ub.get_messages(from_chat_id, i)
+                if msg.empty:
+                    empty += 1
+                    await asyncio.sleep(2)
+                    continue
+                
+                elif msg.media:
+                    if msg.caption:
+                        text = msg.caption.html
+                        new_cap = await replaceshits(text)
+                    else:
+                        new_cap = None 
+                    await ub.copy_message(to_chat_id, from_chat_id, msg.id, new_cap, pm)
+                    await asyncio.sleep(2)
+                    success += 1
+                    continue
+                
+                elif msg.text:
+                    text = msg.text.html
+                    new_cap = await replaceshits(text)
+                    await ub.send_message(to_chat_id, new_cap, disable_web_page_preview=True)
+                    success += 1
+                    await asyncio.sleep(2)
+                    continue
+                    
+                else:
+                    failed += 1
+                    await asyncio.sleep(2)
+                    continue
+            except Exception as e:
+                print(e)
                 failed += 1
+                await asyncio.sleep(2)
                 continue
-        except:
-            failed += 1
-            continue
-    
-    await to_edit.delete()
-    await m.reply_text(f"Successfully forward {success} messages\nTotal empty messages skipped: {empty}\nFailed to forward: {failed} messages")
+        
+        await to_edit.delete()
+        await m.reply_text(f"Successfully forward {success} messages\nTotal empty messages skipped: {empty}\nFailed to forward: {failed} messages")
+    except Exception as e:
+        await m.reply_text(f"Got an error\n{e}")
     return
 
 @bot.on_message(filters.command("forwarding") & bot_owner)
