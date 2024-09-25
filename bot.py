@@ -133,7 +133,7 @@ async def forward_old_msg(c: bot, m: Message):
         if len(links) !=2:
             await m.reply_text("Give me only two links")
             return
-        msg_ids = [links[0].strip().split("/")[-1], links[1].strip().split("/")[-1]]
+        msg_ids = [int(links[0].strip().split("/")[-1]), int(links[1].strip().split("/")[-1])]
         from_msg = int(min(msg_ids))
         to_msg = int(max(msg_ids))
         from_chat = links[0].strip().split("/")
