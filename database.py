@@ -7,7 +7,27 @@ MY_DB = MY_CLIENT["FILE_FORWARDER"]
 MY_TABLE = MY_DB["channel_info"]
 MY_TABLE_2 = MY_DB["word_replacee"]
 SUDOER = MY_DB["SUDO"]
+APPROVE = MY_DB["APPROVE"]
 
+
+def insert_approve_channel(id_: int):
+    curr = APPROVE.find_one({"chat": id_})
+    if not curr:
+        APPROVE.insert_one({"chat": id_})
+    return
+
+def remove_approve_channel(id_: int):
+    APPROVE.find_one_and_delete({"chat": id_})
+    return
+
+def aut_approve_channels():
+    curr = APPROVE.find()
+    if curr:
+        return [int(i["chat"]) for i in curr]
+    return []
+
+def is_approve_channel(id_: int):
+    return bool(APPROVE.find_one({"chat": id_}))
 
 def insert_sudo(user):
     curr = SUDOER.find_one({"sudo": user})

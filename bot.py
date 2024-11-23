@@ -1,10 +1,10 @@
 import asyncio
-from re import findall
 
 from pyrogram import Client, filters, idle
+from pyrogram.enums import ChatMemberStatus as CMS
 from pyrogram.enums import ChatType as CT
 from pyrogram.enums import ParseMode
-from pyrogram.types import Message
+from pyrogram.types import ChatJoinRequest, Message
 
 from database import *
 from vars import *
@@ -53,6 +53,8 @@ async def bot_owner_filt(_, __, m: Message):
     else:
         return True
 
+async def approve_chan(_, __, r: ChatJoinRequest):
+    return is_approve_channel(r.chat.id)
 
 async def replaceshits(tex):
     """for i in findall(r"(@[A-Za-z0-9_]*[A-Za-z]+[A-Za-z0-9_]*( |$|\b))", tex):
@@ -81,6 +83,7 @@ async def channel_filters(_, __, m: Message):
 
 bot_owner = filters.create(bot_owner_filt)
 channel_filt = filters.create(channel_filters)
+allowed_approve = filters.create(approve_chan)
 
 print(f"Bot started on @{bot.me.username}")
 
@@ -108,13 +111,92 @@ async def what_can_I_do(_, m: Message):
 ⤷ /updateword [reply to message]: Will update word removal of the chat
 ⤷ /getforward : Will return the channel where forwarding is enabled
 ⤷ /forward [channel id] link1-link2: Will forward msg from link1 to link2 (channel id is of the channel where you want to forward the msg)
-
+⤷ /approveall [channel id]: Will approve all the pending request in the chat.
+⤷ /addapprove (/connect) [channel id]: Will add approve channel to database, will start auto approve.
+⤷ /delapprove (/disconnect) [channel id]: Will remove chat from database, Will not auto approve.
 from channel: it is the channel from you want to start forwarding messages, you can say source.
+
 to channel: it is the channel where the forwarded message will be sent, you can say destination
 
 If you want to forward the content to a bot or an user just instead of id of to channel give me username of the bot with @
 """
     await m.reply_text(txt)
+
+async def accept_join_req(chat: int, user: int):
+    is_done = await ub.approve_all_chat_join_requests(chat)
+    try:
+        await bot.send_message(user, f"{'Approved' if is_done else 'Failed to approve'} all the pending join requests in the chat {chat}")
+    except:
+        try:
+            await ub.send_message(user, f"{'Approved' if is_done else 'Failed to approve'} all the pending join requests in the chat {chat}")
+        except:
+            pass
+    return
+@bot.on_message(filters.command("approveall"))
+async def approve_all_pendings(_, m: Message):
+    if len(m.command) != 2:
+        await m.reply_text("Please provide me chat id")
+        return
+    
+    try:
+        id_ = int(m.command[1])
+    except ValueError:
+        await m.reply_text("Chat id should be integer")
+        return
+    
+    try:
+        status = await bot.get_chat_member(id_, ub.me.id)
+        if status.status not in [CMS.OWNER, CMS.ADMINISTRATOR]:
+            await m.reply_text(f"Please make sure `{ub.me.id}` ({('@'+ub.me.username) if ub.me.username else ub.me.mention}) this id is admin in the given chat")
+            return
+    except:
+        await m.reply_text(f"Please make sure `{ub.me.id}` ({('@'+ub.me.username) if ub.me.username else ub.me.mention}) this id and the bot ({bot.me.username}) are admin in the given chat")
+        return
+    await m.reply_text("Added the task in background I will let you know once the task gets completed")
+    target = m.from_user.id if m.from_user else m.chat.id
+    asyncio.create_task(accept_join_req(id_, target))
+
+@bot.on_message(filters.command(["addapprove", "conntect"]) & bot_owner)
+async def start_approving(_, m: Message):
+    if len(m.command) != 2:
+        await m.reply_text("Please give me chat id")
+    
+    
+    try:
+        id_ = int(m.command[1])
+    except ValueError:
+        await m.reply_text("Chat id should be integer")
+        return
+    
+    try:
+        meh = await bot.get_chat_member(id_, bot.me.id)
+        if meh.status not in [CMS.OWNER, CMS.ADMINISTRATOR]:
+            await m.reply_text("Make sure I am admin in the chat")
+            return
+    except:
+        await m.reply_text("Please make sure I am part of the group chat and also an admin there")
+        return
+    
+    insert_approve_channel(id_)
+    await m.reply_text("I have added the chat in the auto approve chat. Now I will approve all the incoming request")
+    return
+
+@bot.on_message(filters.command(["delapprove", "disconnect"]) & bot_owner)
+async def stop_approving(_, m: Message):
+    if len(m.command) != 2:
+        await m.reply_text("Please give me chat id")
+
+
+    try:
+        id_ = int(m.command[1])
+    except ValueError:
+        await m.reply_text("Chat id should be integer")
+        return
+
+    remove_approve_channel(id_)
+
+    await m.reply_text("Removed the chat from the database. I will not approve any incoming requests")
+    return
 
 @bot.on_message(filters.command("forward"))
 async def forward_old_msg(c: bot, m: Message):
@@ -432,5 +514,10 @@ async def watcher(_, m: Message):
         new_cap = await replaceshits(text)
 
     await ub.copy_message(to_chat, m.chat.id, m.id, caption=new_cap, parse_mode=pm)
+
+@bot.on_chat_join_request(allowed_approve)
+async def approve_this_user(_, r: ChatJoinRequest):
+    await r.approve()
+    return
 
 idle()

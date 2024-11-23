@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+#bot sessions
+*.session
+*.session-journal
+
 # Distribution / packaging
 .Python
 build/
@@ -127,6 +131,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+vars.py
 
 # Spyder project settings
 .spyderproject
