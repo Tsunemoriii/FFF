@@ -1,8 +1,10 @@
 import asyncio
+from html import entities
 
 from pyrogram import Client, filters, idle
 from pyrogram.enums import ChatMemberStatus as CMS
 from pyrogram.enums import ChatType as CT
+from pyrogram.enums import MessageEntityType as MET
 from pyrogram.enums import ParseMode
 from pyrogram.types import ChatJoinRequest, Message
 
@@ -71,6 +73,17 @@ async def replaceshits(tex):
             tex = tex.replace(x, "")"""
     return tex
 
+async def del_username(_, __, m: Message):
+    if m.chat.type == CT.PRIVATE:
+        return False
+    
+    entities = m.caption.entities if m.caption else m.text.entities
+    if entities:
+        for entity in entities:
+            if entity.type == MET.MENTION:
+                return True
+    
+    return False
 
 async def channel_filters(_, __, m: Message):
     if m.chat.type == CT.PRIVATE:
@@ -84,6 +97,7 @@ async def channel_filters(_, __, m: Message):
 bot_owner = filters.create(bot_owner_filt)
 channel_filt = filters.create(channel_filters)
 allowed_approve = filters.create(approve_chan)
+delete_mention = filters.create(del_username)
 
 print(f"Bot started on @{bot.me.username}")
 
@@ -496,6 +510,16 @@ async def add_more_sudo(_, m: Message):
     await m.reply_text(f"Removed `{user}` to sudoers")
     return
 
+@bot.on_message(delete_mention)
+async def delete(_, m: Message):
+    try:
+        await m.delete()
+    except:
+        try:
+            await ub.delete_messages(m.chat.id, m.id)
+        except:
+            pass
+    return
 
 @ub.on_message(channel_filt)
 async def watcher(_, m: Message):
