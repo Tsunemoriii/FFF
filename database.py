@@ -15,8 +15,8 @@ def rss_update_channel(id: int):
     RSS_UPDATE_CHANNEL.update_one({"u": "u"}, {"$set": {"id": id}}, True)
 
 def get_rss_update_channel():
-    return RSS_UPDATE_CHANNEL.find_one({"u": "u"})["id"]
-
+    if curr:=RSS_UPDATE_CHANNEL.find_one({"u": "u"}):
+        return curr["id"]
 def insert_approve_channel(id_: int):
     curr = APPROVE.find_one({"chat": id_})
     if not curr:
