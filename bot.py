@@ -1,6 +1,9 @@
 import asyncio
-from html import entities
+import httpx
+import re
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from bs4 import BeautifulSoup as soup
 from pyrogram import Client, filters, idle
 from pyrogram.enums import ChatMemberStatus as CMS
 from pyrogram.enums import ChatType as CT
@@ -11,7 +14,7 @@ from pyrogram.types import ChatJoinRequest, Message
 from database import *
 from vars import *
 
-bot = Client(
+bot: Client = Client(
     "My_bot",
     API_ID,
     API_HASH,
@@ -27,14 +30,55 @@ ub = Client(
 
 bot.start()
 
+scheduler = AsyncIOScheduler()
+
+RSS_CACHE = dict()
+
+update_channel = get_rss_update_channel() or UPDATE_CHANNEL
+
+async def anime_updates():
+    if not RSSUSERS:
+        return
+    updates = []
+    for rssuser in RSSUSERS:
+        rsslink = f"https://nyaa.si/?page=rss&c=0_0&f=0&u={rssuser}"
+        if "nyaa.si" in rssuser:
+            rsslink = rssuser
+        parsed = soup(httpx.get(rsslink).text, features="html.parser")
+        title = parsed.find("item").find("title")
+        if not find_rss(rsslink):
+            insert_rss(rsslink, title)
+            return
+
+        for element in parsed.findAll("item"):
+            already = RSS_CACHE.get(rsslink, False) or find_rss(rsslink).get("title", False)
+            if already == str(element.find("title")):
+                break
+            updates.append([str(element.find("title")), (re.sub(r"<.*?>(.*)<.*?>", r"\1", str(element.find("guide")))).replace("view", "download")+".torrent"])
+        update_rss(rsslink, str(title))
+        RSS_CACHE[rsslink] = str(title)
+    
+    for update in updates:
+        try:
+            await bot.send_message(update_channel, f"Found 👀New Anime👀\n\n{update[0]}\n{update[1]}")
+        except Exception as e:
+            print(e)
+            continue
+scheduler.add_job(anime_updates, "interval", minutes=5, max_instances=5)
+
 print("Starting userbot...")
 ub.start()
 print("Userbot started")
+
+scheduler.start()
+print("Scheduler started")   
 
 bot.alive = True
 
 
 def load_sudo():
+    if not get_rss_update_channel():
+        rss_update_channel(UPDATE_CHANNEL)
     sudo = SUDO
     if sudo:
         for i in sudo:
@@ -129,6 +173,7 @@ async def what_can_I_do(_, m: Message):
 ⤷ /addapprove (/connect) [channel id]: Will add approve channel to database, will start auto approve.
 ⤷ /delapprove (/disconnect) [channel id]: Will remove chat from database, Will not auto approve.
 from channel: it is the channel from you want to start forwarding messages, you can say source.
+⤷ /rsschannel [channel id]: Will add the channel to the database, will send the updates of new anime to this chat
 
 to channel: it is the channel where the forwarded message will be sent, you can say destination
 
@@ -542,6 +587,34 @@ async def watcher(_, m: Message):
 @bot.on_chat_join_request(allowed_approve)
 async def approve_this_user(_, r: ChatJoinRequest):
     await r.approve()
+    return
+
+@bot.on_message(filters.command("rsschannel") & bot_owner)
+async def add_rss_channel(_, m: Message):
+    if len(m.command) != 2:
+        await m.reply_text("Please give me channel id")
+        return
+    
+    try:
+        id_ = int(m.command[1])
+    except ValueError:
+        await m.reply_text("Channel id should be integer")
+        return
+    
+    global update_channel
+    update_channel = id_
+
+    try:
+        meh = await bot.get_chat_member(id_, bot.me.id)
+        if meh.status not in [CMS.OWNER, CMS.ADMINISTRATOR]:
+            await m.reply_text("Make sure I am admin in the chat")
+            return
+    except:
+        await m.reply_text("Please make sure I am part of the group chat and also an admin there")
+        return
+    
+    rss_update_channel(id_)
+    await m.reply_text("Added the channel to the database. I will send the updates of new anime to this chat")
     return
 
 idle()

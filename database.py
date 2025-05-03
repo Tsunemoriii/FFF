@@ -8,7 +8,14 @@ MY_TABLE = MY_DB["channel_info"]
 MY_TABLE_2 = MY_DB["word_replacee"]
 SUDOER = MY_DB["SUDO"]
 APPROVE = MY_DB["APPROVE"]
+RSSANIME = MY_DB["RSS"]
+RSS_UPDATE_CHANNEL = MY_DB["RSS_UPDATE_CHANNEL"]
 
+def rss_update_channel(id: int):
+    RSS_UPDATE_CHANNEL.update_one({"u": "u"}, {"$set": {"id": id}}, True)
+
+def get_rss_update_channel():
+    return RSS_UPDATE_CHANNEL.find_one({"u": "u"})["id"]
 
 def insert_approve_channel(id_: int):
     curr = APPROVE.find_one({"chat": id_})
@@ -145,3 +152,18 @@ def update_chat(from_chat, to_chat):
     if curr:
         MY_TABLE.update_one(filt, {"$set": new})
     return
+
+def insert_rss(link: str, title: str):
+    if not find_rss(link):
+        RSSANIME.insert_one({"title": title, "link": link})
+        return True
+    return False
+
+def update_rss(link: str, new_title: str):
+    RSSANIME.update_one({"link": link}, {"$set": {"title": new_title}}, True)
+    return
+
+def find_rss(link: str):
+    if curr := RSSANIME.find_one({"link": link}):
+        return curr
+    return False
