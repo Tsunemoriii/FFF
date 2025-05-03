@@ -8,4 +8,4 @@ DB_URI = getenv("DB_URI", "mongodb+srv://utahakane008:utahakane008@cluster0.ugnn
 SESSION = getenv("STRING_SESSION", "")
 SUDO = [int(i.strip()) for i in getenv("SUDO", "").split(None)]
 RSSUSERS = getenv("RSSUSERS", "").split(None)
-UPDATE_CHANNEL = int(getenv("UPDATE_CHANNEL"))
+UPDATE_CHANNEL = int(getenv("UPDATE_CHANNEL", "-1001252296278"))
