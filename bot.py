@@ -70,7 +70,7 @@ print("Starting userbot...")
 ub.start()
 print("Userbot started")
 
-scheduler.start()
+# scheduler.start()
 print("Scheduler started")   
 
 bot.alive = True
