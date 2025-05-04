@@ -28,7 +28,6 @@ ub = Client(
     session_string=SESSION
 )
 
-bot.start()
 
 scheduler = AsyncIOScheduler()
 
@@ -64,16 +63,6 @@ async def anime_updates():
         except Exception as e:
             print(e)
             continue
-scheduler.add_job(anime_updates, "interval", minutes=5, max_instances=5)
-
-print("Starting userbot...")
-ub.start()
-print("Userbot started")
-
-# scheduler.start()
-print("Scheduler started")   
-
-bot.alive = True
 
 
 def load_sudo():
@@ -85,8 +74,6 @@ def load_sudo():
             insert_sudo(int(i))
     return
 
-
-load_sudo()
 
 pm = ParseMode.HTML
 
@@ -617,4 +604,23 @@ async def add_rss_channel(_, m: Message):
     await m.reply_text("Added the channel to the database. I will send the updates of new anime to this chat")
     return
 
-idle()
+
+async def main():
+    await bot.start()
+    scheduler.add_job(anime_updates, "interval", minutes=5, max_instances=5)
+
+    print("Starting userbot...")
+    await ub.start()
+    print("Userbot started")
+
+    scheduler.start()
+    print("Scheduler started")   
+
+    bot.alive = True
+
+    load_sudo()
+    print("Loaded sudo users. Bot is now ready to use")
+
+    idle()
+
+asyncio.get_event_loop().run_until_complete(main())
