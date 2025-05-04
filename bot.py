@@ -621,6 +621,11 @@ async def main():
     load_sudo()
     print("Loaded sudo users. Bot is now ready to use")
 
-    idle()
+    await idle()
+
+    print("Stopping bot...")
+
+    await bot.stop()
+    await ub.stop()
 
 asyncio.get_event_loop().run_until_complete(main())
