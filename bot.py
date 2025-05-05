@@ -130,8 +130,6 @@ channel_filt = filters.create(channel_filters)
 allowed_approve = filters.create(approve_chan)
 delete_mention = filters.create(del_username)
 
-print(f"Bot started on @{bot.me.username}")
-
 
 @bot.on_message(filters.command("start"))
 async def I_am_ALIVE(c: bot, m: Message):
@@ -619,6 +617,8 @@ async def main():
     bot.alive = True
 
     load_sudo()
+    print(f"Bot started on @{bot.me.username}")
+
     print("Loaded sudo users. Bot is now ready to use")
 
     await idle()
