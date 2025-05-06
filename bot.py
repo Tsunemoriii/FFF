@@ -534,7 +534,7 @@ async def add_more_sudo(_, m: Message):
     await m.reply_text(f"Add `{user}` to sudoers")
     return
 
-@bot.on_message(filters.command("addrssuser") & bot_owner_filt)
+@bot.on_message(filters.command("addrssuser") & bot_owner)
 async def add_rss_user(_, m: Message):
     if len(m.command) != 2:
         await m.reply_text("Please give me rss user")
@@ -552,7 +552,7 @@ async def add_rss_user(_, m: Message):
     await m.reply_text("Added the user to the database. I will send the updates of new anime from this rss user")
     return
 
-@bot.on_message(filters.command("rmrssuser") & bot_owner_filt)
+@bot.on_message(filters.command("rmrssuser") & bot_owner)
 async def remove_rss_user(_, m: Message):
     if len(m.command) != 2:
         await m.reply_text("Please give me rss user")
