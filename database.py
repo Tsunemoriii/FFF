@@ -10,6 +10,7 @@ SUDOER = MY_DB["SUDO"]
 APPROVE = MY_DB["APPROVE"]
 RSSANIME = MY_DB["RSS"]
 RSS_UPDATE_CHANNEL = MY_DB["RSS_UPDATE_CHANNEL"]
+RSS_USERS = MY_DB["RSS_USERS"]
 
 def rss_update_channel(id: int):
     RSS_UPDATE_CHANNEL.update_one({"u": "u"}, {"$set": {"id": id}}, True)
@@ -17,6 +18,21 @@ def rss_update_channel(id: int):
 def get_rss_update_channel():
     if curr:=RSS_UPDATE_CHANNEL.find_one({"u": "u"}):
         return curr["id"]
+
+def insert_rss_user(user: str):
+    if not get_rss_user(user):
+        RSS_USERS.insert_one({"user": user})
+        return True
+    return False
+
+def get_rss_user(user: str | None = None):
+    if not user:
+        return list(RSS_USERS.find({}))
+    elif curr := RSS_USERS.find_one({"user": user}):
+        return curr
+    else:
+        return False
+
 def insert_approve_channel(id_: int):
     curr = APPROVE.find_one({"chat": id_})
     if not curr:

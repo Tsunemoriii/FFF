@@ -33,13 +33,15 @@ scheduler = AsyncIOScheduler()
 
 RSS_CACHE = dict()
 
+rss_users = RSSUSERS
+
 update_channel = get_rss_update_channel() or UPDATE_CHANNEL
 
 async def anime_updates():
-    if not RSSUSERS:
+    if not rss_users:
         return
     updates = []
-    for rssuser in RSSUSERS:
+    for rssuser in rss_users:
         rsslink = f"https://nyaa.si/?page=rss&c=0_0&f=0&u={rssuser}"
         if "nyaa.si" in rssuser:
             rsslink = rssuser
@@ -65,9 +67,16 @@ async def anime_updates():
             continue
 
 
-def load_sudo():
+def load_vars():
     if not get_rss_update_channel():
         rss_update_channel(UPDATE_CHANNEL)
+
+    for user in RSSUSERS:
+        insert_rss_user(user)
+
+    global rss_users
+    rss_users = get_rss_user()
+
     sudo = SUDO
     if sudo:
         for i in sudo:
@@ -108,7 +117,13 @@ async def del_username(_, __, m: Message):
     if m.chat.type == CT.PRIVATE:
         return False
     
-    entities = m.caption.entities if m.caption else m.text.entities
+    entities = None
+
+    if m.caption:
+        entities = m.caption.entities
+    elif m.text:
+        entities = m.text.entities
+
     if entities:
         for entity in entities:
             if entity.type == MET.MENTION:
@@ -159,6 +174,8 @@ async def what_can_I_do(_, m: Message):
 ⤷ /delapprove (/disconnect) [channel id]: Will remove chat from database, Will not auto approve.
 from channel: it is the channel from you want to start forwarding messages, you can say source.
 ⤷ /rsschannel [channel id]: Will add the channel to the database, will send the updates of new anime to this chat
+⤷ /addrssuser [rss_user]: Will add the user to the database, will send the updates of new anime to this user
+⤷ /rmrssuser [rss_user]: Will remove the user from the database, will not send the updates of new anime to this user
 
 to channel: it is the channel where the forwarded message will be sent, you can say destination
 
@@ -517,6 +534,41 @@ async def add_more_sudo(_, m: Message):
     await m.reply_text(f"Add `{user}` to sudoers")
     return
 
+@bot.on_message(filters.command("addrssuser") & bot_owner_filt)
+async def add_rss_user(_, m: Message):
+    if len(m.command) != 2:
+        await m.reply_text("Please give me rss user")
+        return
+    
+    user = m.command[1].strip()
+    
+    global rss_users
+    if user in rss_users:
+        await m.reply_text("User already in the database")
+        return
+
+    insert_rss_user(user)
+    rss_users.append(user)
+    await m.reply_text("Added the user to the database. I will send the updates of new anime from this rss user")
+    return
+
+@bot.on_message(filters.command("rmrssuser") & bot_owner_filt)
+async def remove_rss_user(_, m: Message):
+    if len(m.command) != 2:
+        await m.reply_text("Please give me rss user")
+        return
+    
+    user = m.command[1].strip()
+    
+    global rss_users
+    if user not in rss_users:
+        await m.reply_text("User not in the database")
+        return
+
+    remove_rss_user(user)
+    rss_users.remove(user)
+    await m.reply_text("Removed the user from the database. I will not send the updates of new anime from this rss user")
+    return
 
 @bot.on_message(filters.command("rmsudo") & filters.user(OWNER_ID))
 async def add_more_sudo(_, m: Message):
@@ -616,7 +668,7 @@ async def main():
 
     bot.alive = True
 
-    load_sudo()
+    load_vars()
     print(f"Bot started on @{bot.me.username}")
 
     print("Loaded sudo users. Bot is now ready to use")
