@@ -55,7 +55,13 @@ async def anime_updates():
             already = RSS_CACHE.get(rsslink, False) or find_rss(rsslink).get("title", False)
             if already == str(element.find("title")):
                 break
-            updates.append([str(element.find("title")), (re.sub(r"<.*?>(.*)<.*?>", r"\1", str(element.find("guide")))).replace("view", "download")+".torrent"])
+            
+            if element.find("link"):
+                link = re.sub(r"<.*?>(.*)<.*?>", r"\1", str(element.find("link")))
+            else:
+                link = (re.sub(r"<.*?>(.*)<.*?>", r"\1", str(element.find("guide")))).replace("view", "download")+".torrent"
+
+            updates.append([str(element.find("title")), link])
         update_rss(rsslink, title)
         RSS_CACHE[rsslink] = title
     
