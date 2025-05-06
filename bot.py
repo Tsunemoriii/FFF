@@ -46,7 +46,7 @@ async def anime_updates():
         if "nyaa.si" in rssuser:
             rsslink = rssuser
         parsed = soup(httpx.get(rsslink).text, features="html.parser")
-        title = parsed.find("item").find("title")
+        title = str(parsed.find("item").find("title"))
         if not find_rss(rsslink):
             insert_rss(rsslink, title)
             return
@@ -56,8 +56,8 @@ async def anime_updates():
             if already == str(element.find("title")):
                 break
             updates.append([str(element.find("title")), (re.sub(r"<.*?>(.*)<.*?>", r"\1", str(element.find("guide")))).replace("view", "download")+".torrent"])
-        update_rss(rsslink, str(title))
-        RSS_CACHE[rsslink] = str(title)
+        update_rss(rsslink, title)
+        RSS_CACHE[rsslink] = title
     
     for update in updates:
         try:
