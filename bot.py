@@ -75,7 +75,8 @@ def load_vars():
         insert_rss_user(user)
 
     global rss_users
-    rss_users = get_rss_user()
+    
+    rss_users = [i["user"] for i in get_rss_user()]
 
     sudo = SUDO
     if sudo:
