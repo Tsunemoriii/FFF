@@ -51,7 +51,7 @@ async def anime_updates():
             insert_rss(rsslink, title)
             return
 
-        for element in parsed.findAll("item"):
+        for element in parsed.find_all("item"):
             already = RSS_CACHE.get(rsslink, False) or find_rss(rsslink).get("title", False)
             if already == str(element.find("title")):
                 break
