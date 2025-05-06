@@ -7,5 +7,5 @@ OWNER_ID = int(getenv("OWNER_ID", "1921693263"))
 DB_URI = getenv("DB_URI", "mongodb+srv://utahakane008:utahakane008@cluster0.ugnnf20.mongodb.net/?retryWrites=true&w=majority")
 SESSION = getenv("STRING_SESSION", "")
 SUDO = [int(i.strip()) for i in getenv("SUDO", "").split(None)]
-RSSUSERS = getenv("RSSUSERS", "Ember_Encodes Judas DKB0512 varyg1001").split(None)
+RSSUSERS = getenv("RSSUSERS", "Ember_Encodes Judas DKB0512 varyg1001 Erai-raws").split(None)
 UPDATE_CHANNEL = int(getenv("UPDATE_CHANNEL", "-1001252296278"))
