@@ -19,10 +19,7 @@ def insert_clean_mentions(chat_id: int):
         return True
 
 def remove_clean_mentions(chat_id: int):
-    if curr := CLEAN_MENTIONS.find_one({"chat_id": chat_id}):
-        CLEAN_MENTIONS.delete_one({"_id": curr["_id"]})
-        return True
-    return False
+    return bool(CLEAN_MENTIONS.find_one_and_delete({"chat_id": chat_id}))
 
 def get_clean_mentions(chat_id: int | None = None):
     if chat_id:

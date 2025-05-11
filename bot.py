@@ -592,8 +592,12 @@ async def add_cleanup(_, m: Message):
         await m.reply_text("Chat id should be integer")
         return
     
-    insert_clean_mentions(id_)
-    await m.reply_text("Added the chat to the database. I will clean up mentions while sending messages from this chat")
+    inserted = insert_clean_mentions(id_)
+    if inserted:
+        await m.reply_text("Added the chat to the database. I will clean up mentions while sending messages from this chat")
+    else:
+        await m.reply_text("Chat already in the database")
+        return
     return
 
 @bot.on_message(filters.command("rmcleanup") & bot_owner)
@@ -608,8 +612,11 @@ async def remove_cleanup(_, m: Message):
         await m.reply_text("Chat id should be integer")
         return
     
-    remove_clean_mentions(id_)
-    await m.reply_text("Removed the chat from the database. I will not clean up mentions while sending messages from this chat")
+    removed = remove_clean_mentions(id_)
+    if removed:
+        await m.reply_text("Removed the chat from the database. I will not clean up mentions while sending messages from this chat")
+    else:
+        await m.reply_text("Chat not in the database")
     return
 
 @bot.on_message(filters.command("rmsudo") & filters.user(OWNER_ID))
