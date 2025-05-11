@@ -45,23 +45,23 @@ async def anime_updates():
         rsslink = f"https://nyaa.si/?page=rss&c=0_0&f=0&u={rssuser}"
         if "nyaa.si" in rssuser:
             rsslink = rssuser
-        parsed = soup(httpx.get(rsslink).text, features="html.parser")
-        title = str(parsed.find("item").find("title"))
+        parsed = soup(httpx.get(rsslink).text, features="xml")
+        title = parsed.find("item").find("title").text
         if not find_rss(rsslink):
             insert_rss(rsslink, title)
             return
 
         for element in parsed.find_all("item"):
             already = RSS_CACHE.get(rsslink, False) or find_rss(rsslink).get("title", False)
-            if already == str(element.find("title")):
+            if already == element.find("title").text:
                 break
             
             if element.find("link"):
-                link = re.sub(r"<.*?>(.*)<.*?>", r"\1", str(element.find("link")))
+                link = element.find("link").text
             else:
-                link = (re.sub(r"<.*?>(.*)<.*?>", r"\1", str(element.find("guide")))).replace("view", "download")+".torrent"
+                link = str(element.find("guide").text).replace("view", "download")+".torrent"
 
-            updates.append([str(element.find("title")), link])
+            updates.append([element.find("title").text, link])
         update_rss(rsslink, title)
         RSS_CACHE[rsslink] = title
     
@@ -105,19 +105,20 @@ async def bot_owner_filt(_, __, m: Message):
 async def approve_chan(_, __, r: ChatJoinRequest):
     return is_approve_channel(r.chat.id)
 
-async def replaceshits(tex):
-    """for i in findall(r"(@[A-Za-z0-9_]*[A-Za-z]+[A-Za-z0-9_]*( |$|\b))", tex):
-        tex = tex.replace(i[0], "")
-    for i in findall(
-            r"((http(s)?://)?(t|telegram)\.(me|dog)/[A-Za-z0-9_]+( |$|\b))",
-            tex):
-        tex = tex.replace(i[0], "")
+async def replaceshits(tex, chat_id: int):
+    if get_clean_mentions(chat_id):
+        for i in re.findall(r"(@[A-Za-z0-9_]*[A-Za-z]+[A-Za-z0-9_]*( |$|\b))", tex):
+            tex = tex.replace(i[0], "")
+        for i in re.findall(
+                r"((http(s)?://)?(t|telegram)\.(me|dog)/[A-Za-z0-9_]+( |$|\b))",
+                tex):
+            tex = tex.replace(i[0], "")
 
-    words = get_words()
-    if words:
-        word_list = words.split()
-        for x in word_list:
-            tex = tex.replace(x, "")"""
+        words = get_words()
+        if words:
+            word_list = words.split()
+            for x in word_list:
+                tex = tex.replace(x, "")
     return tex
 
 async def del_username(_, __, m: Message):
@@ -183,6 +184,8 @@ from channel: it is the channel from you want to start forwarding messages, you 
 ⤷ /rsschannel [channel id]: Will add the channel to the database, will send the updates of new anime to this chat
 ⤷ /addrssuser [rss_user]: Will add the user to the database, will send the updates of new anime to this user
 ⤷ /rmrssuser [rss_user]: Will remove the user from the database, will not send the updates of new anime to this user
+⤷ /addcleanup [chat id]: Will clean up mentions while sending messages from this chat.
+⤷ /rmcleanup [chat id]: Will remove the chat from the database, will not clean up mentions while sending messages from this chat.
 
 to channel: it is the channel where the forwarded message will be sent, you can say destination
 
@@ -308,7 +311,7 @@ async def forward_old_msg(c: bot, m: Message):
                 elif msg.media:
                     if msg.caption:
                         text = msg.caption.html
-                        new_cap = await replaceshits(text)
+                        new_cap = await replaceshits(text, msg.chat.id)
                     else:
                         new_cap = None 
                     await ub.copy_message(to_chat_id, from_chat_id, msg.id, new_cap, pm)
@@ -318,7 +321,7 @@ async def forward_old_msg(c: bot, m: Message):
                 
                 elif msg.text:
                     text = msg.text.html
-                    new_cap = await replaceshits(text)
+                    new_cap = await replaceshits(text, msg.chat.id)
                     await ub.send_message(to_chat_id, new_cap, disable_web_page_preview=True)
                     success += 1
                     await asyncio.sleep(8)
@@ -577,6 +580,38 @@ async def remove_rss_user(_, m: Message):
     await m.reply_text("Removed the user from the database. I will not send the updates of new anime from this rss user")
     return
 
+@bot.on_message(filters.command("addcleanup") & bot_owner)
+async def add_cleanup(_, m: Message):
+    if len(m.command) != 2:
+        await m.reply_text("Please give me chat id")
+        return
+    
+    try:
+        id_ = int(m.command[1])
+    except ValueError:
+        await m.reply_text("Chat id should be integer")
+        return
+    
+    insert_clean_mentions(id_)
+    await m.reply_text("Added the chat to the database. I will clean up mentions while sending messages from this chat")
+    return
+
+@bot.on_message(filters.command("rmcleanup") & bot_owner)
+async def remove_cleanup(_, m: Message):
+    if len(m.command) != 2:
+        await m.reply_text("Please give me chat id")
+        return
+    
+    try:
+        id_ = int(m.command[1])
+    except ValueError:
+        await m.reply_text("Chat id should be integer")
+        return
+    
+    remove_clean_mentions(id_)
+    await m.reply_text("Removed the chat from the database. I will not clean up mentions while sending messages from this chat")
+    return
+
 @bot.on_message(filters.command("rmsudo") & filters.user(OWNER_ID))
 async def add_more_sudo(_, m: Message):
     repl = m.reply_to_message
@@ -618,13 +653,13 @@ async def watcher(_, m: Message):
 
     if m.text:
         text = m.text.html
-        new_cap = await replaceshits(text)
+        new_cap = await replaceshits(text, m.chat.id)
         await ub.send_message(to_chat, new_cap, disable_web_page_preview=True)
         return
 
     if m.caption:
         text = m.caption.html
-        new_cap = await replaceshits(text)
+        new_cap = await replaceshits(text, m.chat.id)
 
     await ub.copy_message(to_chat, m.chat.id, m.id, caption=new_cap, parse_mode=pm)
 

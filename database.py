@@ -11,6 +11,29 @@ APPROVE = MY_DB["APPROVE"]
 RSSANIME = MY_DB["RSS"]
 RSS_UPDATE_CHANNEL = MY_DB["RSS_UPDATE_CHANNEL"]
 RSS_USERS = MY_DB["RSS_USERS"]
+CLEAN_MENTIONS = MY_DB["CLEAN_MENTIONS"]
+
+def insert_clean_mentions(chat_id: int):
+    if not CLEAN_MENTIONS.find_one({"chat_id": chat_id}):
+        CLEAN_MENTIONS.insert_one({"chat_id": chat_id})
+        return True
+
+def remove_clean_mentions(chat_id: int):
+    if curr := CLEAN_MENTIONS.find_one({"chat_id": chat_id}):
+        CLEAN_MENTIONS.delete_one({"_id": curr["_id"]})
+        return True
+    return False
+
+def get_clean_mentions(chat_id: int | None = None):
+    if chat_id:
+        if curr := CLEAN_MENTIONS.find_one({"chat_id": chat_id}):
+            return curr["chat_id"]
+        else:
+            return False
+    curr = list(CLEAN_MENTIONS.find({}))
+    if curr:
+        return [int(i["chat_id"]) for i in curr]
+    return []
 
 def rss_update_channel(id: int):
     RSS_UPDATE_CHANNEL.update_one({"u": "u"}, {"$set": {"id": id}}, True)
