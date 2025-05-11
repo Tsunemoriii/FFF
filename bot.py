@@ -665,6 +665,8 @@ async def watcher(_, m: Message):
         return
     to_chat = get_to_chat(m.chat.id)
 
+    new_cap = None
+    
     if m.text:
         text = m.text.html
         new_cap = await replaceshits(text, m.chat.id)
