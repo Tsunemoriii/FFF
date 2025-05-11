@@ -126,6 +126,9 @@ async def del_username(_, __, m: Message):
         return False
     
     entities = None
+    
+    if not get_clean_mentions(m.chat.id):
+        return
 
     if m.caption:
         entities = m.caption.entities
