@@ -53,6 +53,9 @@ def get_rss_user(user: str | None = None):
     else:
         return False
 
+def remove_rss_user(user: str):
+    return bool(RSS_USERS.find_one_and_delete({"user": user})
+
 def insert_approve_channel(id_: int):
     curr = APPROVE.find_one({"chat": id_})
     if not curr:
