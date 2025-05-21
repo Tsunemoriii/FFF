@@ -570,7 +570,7 @@ async def add_rss_user(_, m: Message):
     return
 
 @bot.on_message(filters.command("rmrssuser") & bot_owner)
-async def remove_rss_user(_, m: Message):
+async def remove_rss_user_cmd(_, m: Message):
     if len(m.command) != 2:
         await m.reply_text("Please give me rss user")
         return
