@@ -48,7 +48,7 @@ async def anime_updates():
         parsed = soup(httpx.get(rsslink).text, features="xml")
         Title = parsed.find("item").find("title").text
         if not find_rss(rsslink):
-            insert_rss(rsslink, title)
+            insert_rss(rsslink, Title)
             return
 
         for element in parsed.find_all("item"):
